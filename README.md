@@ -41,6 +41,10 @@ Inspired by Apple’s Environmental and Supply Chain Progress Reports (2023–24
 | `reporting_gaps`             | # of missing or delayed disclosures      |
 
 
+The second dataset, located in the 'synthetic-data-apple' folder, is a **synthetic version** of the Apple dataset with 10,000 rows.
+
+This synthetic dataset was designed to simulate supplier-level emissions data aligned with Apple’s supply chain sustainability objectives and regulatory frameworks like CA SB 253. It includes plausible features such as scope-based emissions, renewable energy use, audit timing, material sourcing, and data traceability indicators. While anonymised and generated, the dataset structure reflects the types of internal data Apple tracks through initiatives like the Supplier Clean Energy Program and the Environmental Progress Reports. This prototype enables rigorous Bayesian modeling and uncertainty analysis, preparing the model for seamless integration with internal systems and audit workflows.
+
 ---
 
 ## Contributors
