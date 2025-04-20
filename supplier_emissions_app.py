@@ -26,8 +26,8 @@ class MC_Dropout_Net(torch.nn.Module):
         return self.out(x)
 
 # Load preprocessing pipeline (assumes pre-fitted and saved)
-preprocessor = joblib.load('/Users/georgepaul/Desktop/Bayesian-Neural_Network/models/preprocessor.joblib')
-target_scaler = joblib.load('/Users/georgepaul/Desktop/Bayesian-Neural_Network/models/target_scaler.joblib')
+preprocessor = joblib.load('/Users/georgepaul/Desktop/bayesian-proposal/models/preprocessor.joblib')
+target_scaler = joblib.load('/Users/georgepaul/Desktop/bayesian-proposal/models/target_scaler.joblib')
 
 # Sample input columns
 cat_cols = ['Country', 'Product_Type', 'Material_Type', 'Source', 'Data_Confidence', 'Report_Month']
@@ -40,7 +40,7 @@ input_dim = preprocessor.transform(pd.DataFrame([{
 }])).shape[1]
 
 model = MC_Dropout_Net(input_dim)
-model.load_state_dict(torch.load('/Users/georgepaul/Desktop/Bayesian-Neural_Network/models/mc_dropout_model.pth'))
+model.load_state_dict(torch.load('/Users/georgepaul/Desktop/bayesian-proposal/models/mc_dropout_model.pth'))
 model.train()
 
 # Inference function with MC Dropout

@@ -23,10 +23,10 @@ class MC_Dropout_Net(nn.Module):
         return self.out(x)
 
 
-preprocessor = joblib.load('/Users/georgepaul/Desktop/Bayesian-Neural_Network/models/preprocessor.joblib')
-target_scaler = joblib.load('/Users/georgepaul/Desktop/Bayesian-Neural_Network/models/target_scaler.joblib')
+preprocessor = joblib.load('/Users/georgepaul/Desktop/bayesian-proposal/models/preprocessor.joblib')
+target_scaler = joblib.load('/Users/georgepaul/Desktop/bayesian-proposal/models/target_scaler.joblib')
 
-model_path = '/Users/georgepaul/Desktop/Bayesian-Neural_Network/models/mc_dropout_model.pth'
+model_path = '/Users/georgepaul/Desktop/bayesian-proposal/models/mc_dropout_model.pth'
 input_dim = len(preprocessor.get_feature_names_out())
 
 model = MC_Dropout_Net(input_dim)
