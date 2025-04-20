@@ -79,4 +79,4 @@ if st.button("Predict Emissions"):
 # Optionally expand to show SHAP in app later
 
 
-# streamlit run supplier_emissions_app.py --server.fileWatcherType none
+# To run: streamlit run supplier_emissions_app.py --server.fileWatcherType none
