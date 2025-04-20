@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("/Users/georgepaul/Desktop/bayesian-proposal/output-data/supplier_emissions_risk.csv")
+df = pd.read_csv("/Users/georgepaul/Desktop/bayesian-proposal/bnn/output-data-bnn/supplier_emissions_risk.csv")
 
 st.title("Supplier Emissions Risk Dashboard")
 
