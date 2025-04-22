@@ -10,34 +10,34 @@ from sklearn.gaussian_process.kernels import Matern, RBF, WhiteKernel, DotProduc
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-# --- Paths ---
+#  Paths
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(base_dir, "generated-data/synthetic_supplier_emissions.csv")
 preprocessor_path = os.path.join(base_dir, "models/preprocessor.joblib")
 target_scaler_path = os.path.join(base_dir, "models/target_scaler.joblib")
 
-# --- Load Data ---
+# Load Data 
 df = pd.read_csv(data_path)
 target_col = 'Reported_Emissions_kgCO2e'
 cat_cols = ['Country', 'Product_Type', 'Material_Type', 'Source', 'Data_Confidence', 'Report_Month']
 num_cols = ['Units_Produced', 'Emission_Factor', 'ThirdParty_Estimate', 'Green_Certified', 'Prior_Violations', 'Audit_Score']
 
-# --- Load Preprocessors ---
+# Load Preprocessors
 preprocessor = joblib.load(preprocessor_path)
 target_scaler = joblib.load(target_scaler_path)
 
-# --- Preprocess Data ---
+# Preprocess Data
 X_full = preprocessor.transform(df[cat_cols + num_cols]).toarray()
 y_full = target_scaler.transform(df[[target_col]]).flatten()
 
-# --- PCA for Dimensionality Reduction ---
+# PCA for Dimensionality Reduction 
 pca = PCA(n_components=0.99)  # retain 99% variance
 X_pca = pca.fit_transform(X_full)
 
-# --- Train/Test Split ---
+# Train/Test Split 
 X_train, X_test, y_train, y_test = train_test_split(X_pca, y_full, test_size=0.2, random_state=42)
 
-# --- Enhanced GPR Kernel ---
+# Enhanced GPR Kernel
 kernel = C(1.0, (1e-3, 1e3)) * (
     Matern(length_scale=1.0, nu=1.5) + 
     RBF(length_scale=1.0) +
@@ -45,7 +45,7 @@ kernel = C(1.0, (1e-3, 1e3)) * (
     WhiteKernel(noise_level=1)
 )
 
-# --- GPR Model ---
+# GPR Model
 gpr = GaussianProcessRegressor(kernel=kernel, alpha=1e-5, n_restarts_optimizer=15, normalize_y=True)
 
 print("Training Tuned GPR...")
@@ -53,16 +53,16 @@ gpr.fit(X_train, y_train)
 
 print(f"Optimized Kernel: {gpr.kernel_}")
 
-# --- Predict ---
+# Predict
 print("Predicting on test data...")
 y_pred, y_std = gpr.predict(X_test, return_std=True)
 
-# --- Inverse transform to original units ---
+# Inverse transform to original units 
 y_pred_orig = target_scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
 y_std_orig = y_std * target_scaler.scale_[0]
 y_true_orig = target_scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
 
-# --- Plot 1: Predicted Emissions vs Uncertainty ---
+#  Plot 1: Predicted Emissions vs Uncertainty 
 plt.figure(figsize=(8, 5))
 plt.scatter(y_pred_orig, y_std_orig, alpha=0.6)
 plt.xlabel("Predicted Emissions (kgCO2e)")
@@ -73,7 +73,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(base_dir, "tuned_emission_vs_uncertainty.png"))
 plt.show()
 
-# --- Plot 2: Uncertainty Distribution ---
+#  Plot 2: Uncertainty Distribution
 plt.figure(figsize=(7, 4))
 plt.hist(y_std_orig, bins=30, edgecolor='black', color='orange')
 plt.title("Distribution of Predictive Uncertainty (Tuned GPR)")
@@ -84,7 +84,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(base_dir, "tuned_uncertainty_histogram.png"))
 plt.show()
 
-# --- Evaluation ---
+# Evaluation 
 mae = mean_absolute_error(y_true_orig, y_pred_orig)
 rmse = mean_squared_error(y_true_orig, y_pred_orig) ** 0.5
 
@@ -123,7 +123,7 @@ def prob_emission_above(gpr_model, x_new, threshold, scaler, pca, samples=10000)
     prob = (y_samples > threshold).mean()
     return prob
 
-# --- Probability Query Example ---
+#  Probability Query Example 
 new_supplier = df.iloc[[0]][cat_cols + num_cols]
 threshold_val = 100000
 

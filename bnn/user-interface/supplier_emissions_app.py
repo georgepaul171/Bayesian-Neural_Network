@@ -51,7 +51,7 @@ def predict_with_uncertainty(model, X, n_samples=50):
     return mean.detach().numpy(), std.detach().numpy()
 
 # Streamlit UI
-st.title("🌍 Supplier Emissions Risk Estimator")
+st.title("Supplier Emissions Risk Estimator")
 st.markdown("Estimate emissions, uncertainty, and risk score for supplier profiles.")
 
 user_input = {}
