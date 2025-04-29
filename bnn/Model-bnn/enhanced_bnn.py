@@ -19,56 +19,67 @@ def save_plot(fig, filename):
     plt.savefig(os.path.join(output_dir, filename))
     plt.close(fig)
 
+def log_cosh_loss(y_pred, y_true):
+    return torch.mean(torch.log(torch.cosh(y_pred - y_true + 1e-6)))
+
 class Enhanced_MC_Dropout_Net(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
+        self.act = nn.LeakyReLU(negative_slope=0.05)
         self.bn1 = nn.BatchNorm1d(input_dim)
         self.fc1 = nn.Linear(input_dim, 256)
         self.bn2 = nn.BatchNorm1d(256)
-        self.dropout1 = nn.Dropout(p=0.3)
+        self.dropout1 = nn.Dropout(p=0.2)
+
         self.fc2 = nn.Linear(256, 128)
+        self.skip_proj = nn.Linear(256, 128)
         self.bn3 = nn.BatchNorm1d(128)
-        self.dropout2 = nn.Dropout(p=0.3)
+        self.dropout2 = nn.Dropout(p=0.2)
+
         self.fc3 = nn.Linear(128, 64)
+        self.skip_proj2 = nn.Linear(128, 64)
         self.bn4 = nn.BatchNorm1d(64)
-        self.dropout3 = nn.Dropout(p=0.3)
+        self.dropout3 = nn.Dropout(p=0.2)
+
         self.out = nn.Linear(64, 1)
-        
-        # Initialize weights
         self._init_weights()
-        
+
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
                 nn.init.constant_(m.bias, 0)
-                
+
     def forward(self, x):
         x = self.bn1(x)
-        x = F.leaky_relu(self.fc1(x))
+        x = self.act(self.fc1(x))
         x = self.bn2(x)
         x = self.dropout1(x)
-        
-        # Skip connection
-        identity = x
-        x = F.leaky_relu(self.fc2(x))
+
+        residual1 = self.skip_proj(x)
+        x = self.act(self.fc2(x))
         x = self.bn3(x)
         x = self.dropout2(x)
-        x = x + identity[:, :128]  # Skip connection
-        
-        x = F.leaky_relu(self.fc3(x))
+        x = x + residual1
+
+        residual2 = self.skip_proj2(x)
+        x = self.act(self.fc3(x))
         x = self.bn4(x)
         x = self.dropout3(x)
-        return self.out(x)
+        x = x + residual2
 
-def train_model(model, train_loader, val_loader=None, epochs=50, patience=10, lr=0.001):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
-    loss_fn = nn.MSELoss()
+        return self.out(x)
     
+def train_model(model, train_loader, val_loader=None, epochs=50, patience=10, lr=0.001):
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+    loss_fn = log_cosh_loss    
+
     best_loss = float('inf')
     patience_counter = 0
     train_losses = []
     val_losses = []
+    
     
     for epoch in range(epochs):
         # Training
@@ -109,9 +120,11 @@ def train_model(model, train_loader, val_loader=None, epochs=50, patience=10, lr
                     print(f"Early stopping triggered at epoch {epoch+1}")
                     model.load_state_dict(torch.load(os.path.join(output_dir, 'best_model.pth')))
                     break
-        
+                    
         print(f"Epoch {epoch+1}, Train Loss: {avg_train_loss:.4f}" + 
               (f", Val Loss: {avg_val_loss:.4f}" if val_loader is not None else ""))
+        
+        scheduler.step(avg_val_loss)
     
     return train_losses, val_losses
 
@@ -295,6 +308,7 @@ if __name__ == "__main__":
     
     X = df[feature_columns].values
     y = (df['Emissions_Scope1_tCO2e'] + df['Emissions_Scope2_tCO2e'] + df['Emissions_Scope3_tCO2e']).values.reshape(-1, 1)
+    
     supplier_ids = df['Supplier_ID'].values
 
     # Train/val/test split
@@ -330,11 +344,11 @@ if __name__ == "__main__":
 
     # Train
     print("Training model...")
-    train_losses, val_losses = train_model(model, train_loader, val_loader, epochs=50, patience=10)
+    train_losses, val_losses = train_model(model, train_loader, val_loader, epochs=60, patience=10)
 
     # Predict with MC Dropout
     print("Predicting with MC Dropout...")
-    mean_preds, epistemic_uncertainty, aleatoric_uncertainty = predict_mc(model, X_test_tensor, n_samples=100)
+    mean_preds, epistemic_uncertainty, aleatoric_uncertainty = predict_mc(model, X_test_tensor, n_samples=300)
 
     # After predictions, inverse transform the predictions and true values for plotting
     mean_preds = y_scaler.inverse_transform(mean_preds)
